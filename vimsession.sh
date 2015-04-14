@@ -1,6 +1,10 @@
 #!/bin/bash
 
-vsfile="$(find . -maxdepth 1 -type f -iname ".*.vs.vim" | head -n 1)"
+vsfile="$(find . -maxdepth 1 \-type f \
+				-iname ".*.vs.vim" \
+				-o \
+	 			-iname ".*.vs" \
+				| head -n 1)"
 
 if [ -z "$vsfile" ]; then
 	echo none found
