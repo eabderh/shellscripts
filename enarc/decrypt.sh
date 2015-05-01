@@ -5,10 +5,12 @@
 while getopts ":sd:" opt; do
 	case $opt in
 		s)
+			# not implemented yet
 			echo safe mode
 			safe_mode=true;
 			;;
 		d)
+			# not implemented yet
 			destination=$OPTARG
 			;;
 		\?)
@@ -27,6 +29,9 @@ if [[ -z $file_encrypted || ! -e $file_encrypted ]]; then
 	exit 0
 fi
 
+# expand the file path
+file_encrypted=$(readlink -f $file_encrypted)
+
 # check if file is right type
 #file_archived=$(printf '%s' $file_encrypted | sed -r "s/.gpg//")
 if [ "${file_encrypted##*.}" != "gpg" ]; then
@@ -38,16 +43,16 @@ fi
 destination="${file_encrypted%.*}"
 file_archived=$destination.7z
 
-#echo $destination
-#echo $file_archived
-#echo $file_encrypted
-#exit 0
+printf "\n"
+echo "Encrypted file path: $file_encrypted"
+echo "Destination file path: $file_encrypted"
+printf "\n"
 
 # decrypt and extract
-gpg --output $file_archived --decrypt $file_encrypted
-7z x $file_archived -o$(dirname $destination)
+gpg --output $file_archived --decrypt $file_encrypted >/dev/null
+7z x $file_archived -o$(dirname $destination) >/dev/null
 
 # place symlink to destination
-ln -s $destination "open_enarc"
+ln -s $destination "enarc_open"
 
 

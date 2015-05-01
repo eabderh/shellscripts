@@ -6,7 +6,7 @@
 trap 'echo something went wrong' ERR
 
 # check for options in the argument
-while getopts ":sd:" opt; do
+while getopts ":sd:k:" opt; do
 	case $opt in
 		s)
 			echo safe mode
@@ -14,6 +14,9 @@ while getopts ":sd:" opt; do
 			;;
 		d)
 			destination=$OPTARG
+			;;
+		k)
+			publickey_uid=$OPTARG
 			;;
 		\?)
 			echo invalid option
@@ -24,10 +27,18 @@ done
 
 shift $(($OPTIND - 1))
 
+
+# check for recipients
+if [ -z $publickey_uid ]; then
+	echo "using default recipient"
+else
+	gpg_recipient_arg="--recipient $publickey_uid"
+fi
+
 # check for pre-existing symlink to file opened by decryption
-if [ -L "open_enarc" ]; then
-	echo using symlink from previous decryption
-	target=$(readlink -f open_enarc)
+if [ -L "enarc_open" ]; then
+	echo "using symlink from previous decryption"
+	target=$(readlink -f enarc_open)
 else
 	target=$1
 fi
@@ -38,6 +49,9 @@ if [[ -z $target || ! -e $target ]]; then
 	exit 0
 fi
 
+# expand the file path
+target=$(readlink -f $target)
+
 # check if a new destination exists
 if [ -z $destination ]; then
 	file_archived=$target.7z
@@ -47,23 +61,29 @@ else
 	file_encrypted=$destination
 fi
 
+printf "\n"
+echo "Target path: $target"
+echo "Encrypted file path: $file_encrypted"
+printf "\n"
+
+
+
 # use different files so that the old files that still exist don't
 # get overwritten
 temp_file_archived=$file_archived.temp
-temp_file_encrypted=$file_encrypted.tempx
+temp_file_encrypted=$file_encrypted.temp
 # check if temp files already exist
 if [[ -e temp_file_archived || -e temp_file_encrypted ]]; then
 	echo temp files already exist
 	exit 0
 fi
 
-#echo target $target
-#echo destination $destination
 
 # actual work
-7z a $temp_file_archived $target
-gpg --output $temp_file_encrypted --encrypt --recipient \
-	'Elias Abderhalden' $temp_file_archived
+7z a $temp_file_archived $target >/dev/null
+gpg --output $temp_file_encrypted --encrypt \
+	$gpg_recipient_arg \
+	$temp_file_archived >/dev/null
 
 # overwrite old files
 mv $temp_file_archived $file_archived
@@ -75,8 +95,8 @@ if [ ! "$safe_mode" = true ]; then
 fi
 
 # delete symlink
-if [ -L "open_enarc" ]; then
-	rm open_enarc
+if [ -L "enarc_open" ]; then
+	rm enarc_open
 fi
 
 
