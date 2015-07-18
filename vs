@@ -1,1 +1,1 @@
-vimsession.sh
+vimsession/vimsession.sh
